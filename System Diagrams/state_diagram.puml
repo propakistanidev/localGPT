@@ -1,0 +1,142 @@
+@startuml ChatGPT_State_Diagram
+title State Diagram - ChatGPT-like Application
+
+[*] --> Loading : Application starts
+
+state Loading {
+    [*] --> CheckingConnection
+    CheckingConnection --> LoadingAssets : Connection OK
+    CheckingConnection --> ConnectionError : Connection failed
+    LoadingAssets --> InitializingUI : Assets loaded
+    ConnectionError --> CheckingConnection : Retry
+}
+
+Loading --> Ready : Initialization complete
+
+state Ready {
+    [*] --> Idle
+    Idle --> WaitingForInput : User focuses input
+    WaitingForInput --> ProcessingInput : User sends message
+    WaitingForInput --> Idle : User unfocuses
+    
+    state ProcessingInput {
+        [*] --> ValidatingInput
+        ValidatingInput --> SendingRequest : Input valid
+        ValidatingInput --> ValidationError : Input invalid
+        ValidationError --> WaitingForInput : Show error
+        
+        state SendingRequest {
+            [*] --> CallingAPI
+            CallingAPI --> WaitingForOllama : API called
+            WaitingForOllama --> ReceivingResponse : Ollama responds
+            WaitingForOllama --> APIError : Ollama unavailable
+            ReceivingResponse --> ProcessingResponse : Response received
+            APIError --> ErrorState : Handle error
+        }
+        
+        SendingRequest --> DisplayingResponse : Success
+        SendingRequest --> ErrorState : API error
+    }
+    
+    ProcessingInput --> Idle : Message processed
+    ProcessingInput --> ErrorState : Processing failed
+    
+    state DisplayingResponse {
+        [*] --> FormattingResponse
+        FormattingResponse --> RenderingMessage : Response formatted
+        RenderingMessage --> SavingToHistory : Message rendered
+        SavingToHistory --> [*] : History updated
+    }
+    
+    DisplayingResponse --> Idle : Response displayed
+    
+    Idle --> ViewingHistory : User clicks history
+    Idle --> ManagingConversations : User manages chats
+    Idle --> ConfiguringSettings : User opens settings
+    
+    state ViewingHistory {
+        [*] --> LoadingHistory
+        LoadingHistory --> DisplayingConversations : History loaded
+        DisplayingConversations --> LoadingConversation : User selects chat
+        LoadingConversation --> [*] : Conversation loaded
+    }
+    
+    state ManagingConversations {
+        [*] --> ConversationList
+        ConversationList --> CreatingNew : New conversation
+        ConversationList --> DeletingConversation : Delete action
+        ConversationList --> ExportingConversation : Export action
+        CreatingNew --> [*] : New conversation created
+        DeletingConversation --> [*] : Conversation deleted
+        ExportingConversation --> [*] : Export complete
+    }
+    
+    state ConfiguringSettings {
+        [*] --> SettingsPanel
+        SettingsPanel --> ChangingTheme : Theme selection
+        SettingsPanel --> ChangingModel : Model selection
+        SettingsPanel --> UpdatingPreferences : Other preferences
+        ChangingTheme --> [*] : Theme applied
+        ChangingModel --> [*] : Model changed
+        UpdatingPreferences --> [*] : Preferences saved
+    }
+    
+    ViewingHistory --> Idle : History interaction complete
+    ManagingConversations --> Idle : Management complete
+    ConfiguringSettings --> Idle : Settings saved
+}
+
+state ErrorState {
+    [*] --> DisplayingError
+    DisplayingError --> LoggingError : Error shown
+    LoggingError --> OfferingRetry : Error logged
+    OfferingRetry --> Ready : User retries
+    OfferingRetry --> [*] : User cancels
+}
+
+Ready --> ErrorState : Error occurs
+ErrorState --> Ready : Error resolved
+
+Ready --> Maintenance : System maintenance
+Maintenance --> Ready : Maintenance complete
+
+state Maintenance {
+    [*] --> CheckingOllamaService
+    CheckingOllamaService --> UpdatedServiceStatus : Service checked
+    UpdatedServiceStatus --> [*] : Status updated
+}
+
+Ready --> Cleanup : User closes app
+Cleanup --> [*] : Application terminated
+
+state Cleanup {
+    [*] --> SavingState
+    SavingState --> ClearingMemory : State saved
+    ClearingMemory --> [*] : Memory cleared
+}
+
+note right of LoadingAssets
+    Loading React components,
+    CSS, and JavaScript bundles
+    from Vercel CDN
+end note
+
+note bottom of WaitingForOllama
+    Waiting for local Ollama service
+    to process the prompt with
+    the selected AI model
+end note
+
+note left of SavingToHistory
+    Conversation data saved to
+    browser localStorage or
+    external database
+end note
+
+note top of CheckingOllamaService
+    Periodic health checks to
+    ensure Ollama service is
+    running and responsive
+end note
+
+@enduml

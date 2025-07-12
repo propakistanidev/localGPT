@@ -1,0 +1,139 @@
+@startuml ChatGPT_Network_Diagram
+title Network Diagram - ChatGPT-like Application
+
+!define CLOUD cloud
+!define DATABASE database
+!define NODE node
+!define INTERFACE interface
+
+CLOUD "Internet" as Internet
+
+NODE "User's Local Network" as LocalNetwork {
+    NODE "User's Computer" as UserComputer {
+        INTERFACE "eth0: 192.168.1.100" as UserEth
+        NODE "Web Browser" as Browser {
+            INTERFACE "Port 80/443" as BrowserPort
+        }
+        NODE "Ollama Service" as OllamaLocal {
+            INTERFACE "Port 11434" as OllamaPort
+        }
+    }
+    
+    NODE "Router/Gateway" as Router {
+        INTERFACE "WAN: Public IP" as WanInterface
+        INTERFACE "LAN: 192.168.1.1" as LanInterface
+    }
+}
+
+CLOUD "Vercel Edge Network" as VercelEdge {
+    NODE "Edge Location 1 (US-East)" as EdgeUS {
+        INTERFACE "CDN Endpoint" as CDNEndpoint1
+        NODE "Edge Function" as EdgeFunc1
+    }
+    
+    NODE "Edge Location 2 (EU-West)" as EdgeEU {
+        INTERFACE "CDN Endpoint" as CDNEndpoint2
+        NODE "Edge Function" as EdgeFunc2
+    }
+    
+    NODE "Edge Location 3 (Asia-Pacific)" as EdgeAP {
+        INTERFACE "CDN Endpoint" as CDNEndpoint3
+        NODE "Edge Function" as EdgeFunc3
+    }
+}
+
+CLOUD "Vercel Platform" as VercelPlatform {
+    NODE "Build System" as BuildSystem {
+        INTERFACE "GitHub Webhook" as GithubWebhook
+    }
+    
+    NODE "Serverless Functions" as ServerlessFunctions {
+        INTERFACE "API Gateway" as APIGateway
+    }
+    
+    DATABASE "Function Storage" as FunctionStorage
+    DATABASE "Static Asset Storage" as StaticStorage
+}
+
+CLOUD "External Services" as ExternalServices {
+    NODE "GitHub" as GitHub {
+        INTERFACE "Port 443" as GitHubPort
+    }
+    
+    NODE "NPM Registry" as NPMRegistry {
+        INTERFACE "Port 443" as NPMPort
+    }
+}
+
+NODE "Developer Machine" as DevMachine {
+    INTERFACE "eth0: Dynamic IP" as DevEth
+    NODE "Development Environment" as DevEnv {
+        INTERFACE "Port 22 (SSH)" as SSHPort
+        INTERFACE "Port 3000 (Dev Server)" as DevServerPort
+    }
+}
+
+' Network connections
+Browser --> Internet : "HTTPS (443)"
+Internet --> Router : "Public IP routing"
+Router --> UserEth : "Local routing"
+UserEth --> BrowserPort : "Internal communication"
+
+' Local AI service connection
+Browser --> OllamaPort : "HTTP (11434)\nLocal API calls"
+OllamaLocal --> OllamaPort : "Service binding"
+
+' Vercel Edge Network connections
+Internet --> VercelEdge : "Global routing"
+VercelEdge --> EdgeUS : "US traffic"
+VercelEdge --> EdgeEU : "EU traffic"
+VercelEdge --> EdgeAP : "APAC traffic"
+
+' Edge to platform connections
+EdgeUS --> VercelPlatform : "Function execution"
+EdgeEU --> VercelPlatform : "Function execution"
+EdgeAP --> VercelPlatform : "Function execution"
+
+' Platform internal connections
+BuildSystem --> FunctionStorage : "Deploy functions"
+BuildSystem --> StaticStorage : "Deploy static assets"
+APIGateway --> ServerlessFunctions : "Route requests"
+
+' External service connections
+BuildSystem --> GitHub : "Source code fetch"
+BuildSystem --> NPMRegistry : "Package dependencies"
+DevEnv --> GitHub : "Git operations"
+
+' Developer connections
+DevMachine --> Internet : "HTTPS (443)"
+DevEnv --> VercelPlatform : "Deployment"
+
+note bottom of OllamaLocal
+    Local AI service runs on
+    localhost:11434
+    No external network access needed
+    for AI model inference
+end note
+
+note top of VercelEdge
+    Vercel Edge Network provides:
+    - Global CDN distribution
+    - Edge function execution
+    - Automatic SSL termination
+    - DDoS protection
+end note
+
+note right of Router
+    Home router/firewall
+    NAT translation for local services
+    Port forwarding not required
+    for Ollama (local access only)
+end note
+
+note left of GitHub
+    Source code repository
+    Triggers automated deployments
+    via webhooks to Vercel
+end note
+
+@enduml

@@ -1,0 +1,55 @@
+@startuml ChatGPT_Sequence_Diagram
+title Chat Message Flow - ChatGPT-like Application
+
+actor User
+participant "Chat Interface" as UI
+participant "API Client" as API
+participant "Chat Controller" as Controller
+participant "Ollama Service" as Ollama
+participant "Local Model" as Model
+database "Chat History" as History
+
+== User Sends Message ==
+User -> UI: Type message and send
+UI -> UI: Validate input
+UI -> UI: Add user message to chat
+UI -> UI: Show loading indicator
+
+UI -> API: POST /api/chat
+note right: {message: "Hello", conversationId: "123"}
+
+API -> Controller: handleChatRequest()
+Controller -> Controller: Validate request
+Controller -> Ollama: generateResponse(prompt)
+
+Ollama -> Model: Send prompt
+Model -> Model: Process with local AI model
+Model -> Ollama: Return generated response
+Ollama -> Controller: Return response
+
+Controller -> Controller: Format response
+Controller -> API: Return ChatResponse
+API -> UI: Return response data
+
+UI -> UI: Add AI response to chat
+UI -> UI: Hide loading indicator
+UI -> History: Save conversation
+
+== Display Response ==
+UI -> User: Display AI response
+
+== Error Handling ==
+alt API Error
+    API -> UI: Return error
+    UI -> UI: Show error message
+    UI -> User: Display error notification
+end
+
+== Load Chat History ==
+User -> UI: Click on previous conversation
+UI -> History: loadConversation(id)
+History -> UI: Return conversation data
+UI -> UI: Display conversation messages
+UI -> User: Show previous chat
+
+@enduml

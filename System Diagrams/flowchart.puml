@@ -1,0 +1,112 @@
+@startuml ChatGPT_Flowchart
+title Process Flowchart - ChatGPT-like Application
+
+start
+
+:User visits application URL;
+:Load React frontend from Vercel CDN;
+:Initialize chat interface;
+:Check for existing chat history;
+
+if (Chat history exists?) then (yes)
+    :Display previous conversations;
+    :Load last active conversation;
+else (no)
+    :Create new conversation;
+    :Display welcome message;
+endif
+
+:Display chat interface;
+
+repeat
+    :Wait for user input;
+    :User types message;
+    :Validate input;
+    
+    if (Input is valid?) then (yes)
+        :Add user message to chat;
+        :Show typing indicator;
+        :Prepare API request;
+        
+        :Send POST request to /api/chat;
+        
+        if (Ollama service available?) then (yes)
+            :Forward request to Ollama;
+            :Process with local AI model;
+            
+            if (Model generates response?) then (yes)
+                :Format AI response;
+                :Return response to frontend;
+                :Hide typing indicator;
+                :Display AI response;
+                :Save conversation to history;
+                :Update conversation timestamp;
+            else (no)
+                :Generate fallback response;
+                :Display error message;
+            endif
+        else (no)
+            :Display service unavailable message;
+            :Suggest checking Ollama installation;
+        endif
+    else (no)
+        :Display validation error;
+        :Highlight input field;
+    endif
+    
+    :Check for additional user actions;
+    
+    if (User wants to start new chat?) then (yes)
+        :Save current conversation;
+        :Create new conversation;
+        :Clear chat interface;
+    endif
+    
+    if (User wants to load previous chat?) then (yes)
+        :Display conversation list;
+        :User selects conversation;
+        :Load selected conversation;
+        :Display conversation messages;
+    endif
+    
+    if (User wants to delete conversation?) then (yes)
+        :Confirm deletion;
+        :Remove from history;
+        :Update conversation list;
+    endif
+    
+    if (User wants to export chat?) then (yes)
+        :Format conversation data;
+        :Generate download file;
+        :Trigger file download;
+    endif
+    
+    if (User wants to change settings?) then (yes)
+        :Open settings panel;
+        :Allow theme/model changes;
+        :Save preferences;
+        :Apply changes;
+    endif
+
+repeat while (User continues using app?) is (yes)
+-> no;
+
+:Save current state;
+:Cleanup resources;
+
+stop
+
+note right of "Process with local AI model"
+    This step depends on:
+    - Ollama service running locally
+    - AI model downloaded (e.g., Llama 2)
+    - Sufficient system resources
+end note
+
+note left of "Save conversation to history"
+    Conversations are saved to:
+    - Browser localStorage
+    - Or external database if configured
+end note
+
+@enduml

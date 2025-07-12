@@ -1,0 +1,74 @@
+@startuml ChatGPT_Activity_Diagram
+title Activity Diagram - Chat Message Processing
+
+start
+
+:User opens chat application;
+:Display chat interface;
+
+while (User wants to chat?) is (yes)
+    :User types message;
+    :Validate input;
+    
+    if (Input valid?) then (yes)
+        :Display user message;
+        :Show loading indicator;
+        :Send request to API;
+        
+        fork
+            :API receives request;
+            :Controller validates request;
+            if (Request valid?) then (yes)
+                :Call Ollama service;
+                :Ollama processes with local model;
+                if (Model responds successfully?) then (yes)
+                    :Format response;
+                    :Return response to frontend;
+                else (no)
+                    :Generate error response;
+                    :Return error to frontend;
+                endif
+            else (no)
+                :Return validation error;
+            endif
+        fork again
+            :Frontend waits for response;
+            :Update UI state;
+        end fork
+        
+        :Receive API response;
+        :Hide loading indicator;
+        
+        if (Response successful?) then (yes)
+            :Display AI response;
+            :Save conversation to history;
+        else (no)
+            :Display error message;
+            :Log error details;
+        endif
+        
+    else (no)
+        :Show validation error;
+    endif
+    
+    :Wait for next user action;
+endwhile (no)
+
+:User closes application;
+:Save current state;
+:Cleanup resources;
+
+stop
+
+note right of "Call Ollama service"
+    Ollama runs locally and uses
+    downloaded AI model (e.g., Llama 2)
+    for generating responses
+end note
+
+note left of "Save conversation to history"
+    Chat history is stored locally
+    in browser storage or database
+end note
+
+@enduml

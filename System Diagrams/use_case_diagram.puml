@@ -1,0 +1,65 @@
+@startuml ChatGPT_Use_Case_Diagram
+title Use Case Diagram - ChatGPT-like Application
+
+left to right direction
+
+actor "User" as user
+actor "Developer" as dev
+actor "Ollama Service" as ollama
+
+package "Chat Application" {
+    usecase "Send Message" as UC1
+    usecase "Receive AI Response" as UC2
+    usecase "View Chat History" as UC3
+    usecase "Start New Conversation" as UC4
+    usecase "Delete Conversation" as UC5
+    usecase "Export Chat" as UC6
+    usecase "Change Theme" as UC7
+    usecase "Configure Settings" as UC8
+    
+    usecase "Manage Models" as UC9
+    usecase "Monitor Performance" as UC10
+    usecase "Handle Errors" as UC11
+    usecase "Deploy Application" as UC12
+    
+    usecase "Process Natural Language" as UC13
+    usecase "Generate Response" as UC14
+    usecase "Validate Input" as UC15
+}
+
+' User interactions
+user --> UC1
+user --> UC2
+user --> UC3
+user --> UC4
+user --> UC5
+user --> UC6
+user --> UC7
+user --> UC8
+
+' Developer interactions
+dev --> UC9
+dev --> UC10
+dev --> UC11
+dev --> UC12
+dev --> UC8
+
+' Ollama service interactions
+ollama --> UC13
+ollama --> UC14
+ollama --> UC15
+
+' Dependencies
+UC1 ..> UC15 : <<include>>
+UC1 ..> UC13 : <<include>>
+UC1 ..> UC14 : <<include>>
+UC2 ..> UC14 : <<include>>
+UC3 ..> UC4 : <<extend>>
+UC8 ..> UC9 : <<include>>
+UC10 ..> UC11 : <<extend>>
+
+note top of UC1 : User types message\nand submits to chat
+note bottom of UC13 : Ollama processes\nusing local AI model
+note right of UC9 : Developer can add/remove\nAI models via Ollama
+
+@enduml

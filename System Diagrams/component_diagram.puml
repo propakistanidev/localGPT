@@ -1,0 +1,118 @@
+@startuml ChatGPT_Component_Diagram
+title Component Diagram - ChatGPT-like Application
+
+!define COMPONENT component
+!define INTERFACE interface
+
+package "Frontend (React/Next.js)" {
+    COMPONENT [Chat Interface] as ChatUI
+    COMPONENT [Message Components] as MessageComp
+    COMPONENT [Chat History] as History
+    COMPONENT [Settings Panel] as Settings
+    COMPONENT [Theme Manager] as Theme
+    
+    INTERFACE "IMessageDisplay" as IMessage
+    INTERFACE "IChatHistory" as IHistory
+    INTERFACE "IThemeProvider" as ITheme
+}
+
+package "API Layer" {
+    COMPONENT [API Routes] as APIRoutes
+    COMPONENT [Middleware] as Middleware
+    COMPONENT [Error Handler] as ErrorHandler
+    COMPONENT [Rate Limiter] as RateLimit
+    
+    INTERFACE "IChatAPI" as IChatAPI
+    INTERFACE "IErrorHandler" as IErrorHandler
+}
+
+package "Business Logic" {
+    COMPONENT [Chat Controller] as Controller
+    COMPONENT [Message Processor] as MessageProc
+    COMPONENT [Conversation Manager] as ConvManager
+    COMPONENT [Model Manager] as ModelManager
+    
+    INTERFACE "IChatService" as IChatService
+    INTERFACE "IModelService" as IModelService
+}
+
+package "External Services" {
+    COMPONENT [Ollama Service] as Ollama
+    COMPONENT [Local AI Model] as LocalModel
+    
+    INTERFACE "IOllamaAPI" as IOllamaAPI
+}
+
+package "Storage" {
+    COMPONENT [Local Storage] as LocalStore
+    COMPONENT [Session Storage] as SessionStore
+    
+    INTERFACE "IStorage" as IStorage
+}
+
+package "Deployment (Vercel)" {
+    COMPONENT [Vercel Edge Functions] as EdgeFunctions
+    COMPONENT [Static Site Generator] as SSG
+    COMPONENT [CDN] as CDN
+    
+    INTERFACE "IDeployment" as IDeployment
+}
+
+' Frontend relationships
+ChatUI --> IMessage
+ChatUI --> IHistory
+ChatUI --> ITheme
+MessageComp --> IMessage
+History --> IHistory
+Settings --> ITheme
+Theme --> ITheme
+
+' API relationships
+APIRoutes --> IChatAPI
+APIRoutes --> IErrorHandler
+Middleware --> IChatAPI
+ErrorHandler --> IErrorHandler
+RateLimit --> IChatAPI
+
+' Business Logic relationships
+Controller --> IChatService
+Controller --> IModelService
+MessageProc --> IChatService
+ConvManager --> IChatService
+ModelManager --> IModelService
+
+' External Services relationships
+Ollama --> IOllamaAPI
+LocalModel --> IOllamaAPI
+
+' Storage relationships
+LocalStore --> IStorage
+SessionStore --> IStorage
+
+' Deployment relationships
+EdgeFunctions --> IDeployment
+SSG --> IDeployment
+CDN --> IDeployment
+
+' Cross-package relationships
+ChatUI --> APIRoutes : HTTP/REST
+APIRoutes --> Controller : Function calls
+Controller --> Ollama : HTTP API
+History --> LocalStore : Data persistence
+Settings --> SessionStore : User preferences
+APIRoutes --> EdgeFunctions : Deployed on
+ChatUI --> CDN : Static assets
+
+note bottom of Ollama
+    Ollama runs locally on user's machine
+    and serves the downloaded AI model
+    via HTTP API (typically on port 11434)
+end note
+
+note top of EdgeFunctions
+    Vercel Edge Functions handle
+    API requests and route them
+    to appropriate handlers
+end note
+
+@enduml

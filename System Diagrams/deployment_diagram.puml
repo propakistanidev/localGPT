@@ -1,0 +1,110 @@
+@startuml ChatGPT_Deployment_Diagram
+title Deployment Diagram - ChatGPT-like Application
+
+!define NODE node
+!define ARTIFACT artifact
+!define COMPONENT component
+
+NODE "User's Local Machine" as UserMachine {
+    NODE "Web Browser" as Browser {
+        ARTIFACT "React App" as ReactApp
+        ARTIFACT "Chat Interface" as ChatUI
+        ARTIFACT "Local Storage" as LocalStorage
+    }
+    
+    NODE "Ollama Runtime" as OllamaRuntime {
+        ARTIFACT "Ollama Service" as OllamaService
+        ARTIFACT "AI Model (e.g., Llama 2)" as AIModel
+        COMPONENT "Model Engine" as ModelEngine
+    }
+}
+
+NODE "Vercel Cloud Platform" as VercelCloud {
+    NODE "Edge Network" as EdgeNetwork {
+        ARTIFACT "CDN" as CDN
+        ARTIFACT "Static Assets" as StaticAssets
+    }
+    
+    NODE "Serverless Functions" as ServerlessFunctions {
+        ARTIFACT "API Routes" as APIRoutes
+        ARTIFACT "Edge Functions" as EdgeFunctions
+        ARTIFACT "Middleware" as Middleware
+    }
+    
+    NODE "Build System" as BuildSystem {
+        ARTIFACT "Next.js Build" as NextBuild
+        ARTIFACT "Static Site Generator" as SSG
+    }
+}
+
+NODE "Developer Machine" as DevMachine {
+    NODE "Development Environment" as DevEnv {
+        ARTIFACT "Source Code" as SourceCode
+        ARTIFACT "Package.json" as PackageJson
+        ARTIFACT "Vercel CLI" as VercelCLI
+    }
+    
+    NODE "Version Control" as VC {
+        ARTIFACT "Git Repository" as GitRepo
+    }
+}
+
+NODE "External Services" as ExternalServices {
+    NODE "GitHub" as GitHub {
+        ARTIFACT "Repository" as Repo
+        ARTIFACT "GitHub Actions" as Actions
+    }
+}
+
+' Deployment relationships
+Browser --> CDN : "HTTPS requests"
+CDN --> StaticAssets : "Serves static files"
+ReactApp --> APIRoutes : "API calls"
+APIRoutes --> EdgeFunctions : "Function execution"
+ReactApp --> LocalStorage : "Data persistence"
+
+' Local AI processing
+ReactApp --> OllamaService : "HTTP API calls\n(localhost:11434)"
+OllamaService --> AIModel : "Model inference"
+AIModel --> ModelEngine : "Text generation"
+
+' Development and deployment flow
+DevEnv --> GitRepo : "Git push"
+GitRepo --> Repo : "Code synchronization"
+Repo --> Actions : "CI/CD trigger"
+Actions --> BuildSystem : "Automated deployment"
+BuildSystem --> NextBuild : "Build process"
+NextBuild --> EdgeNetwork : "Deploy to edge"
+VercelCLI --> VercelCloud : "Manual deployment"
+
+' Configuration
+PackageJson --> NextBuild : "Build configuration"
+SourceCode --> NextBuild : "Source compilation"
+
+note bottom of OllamaService
+    Ollama runs locally on port 11434
+    Requires local AI model download
+    (e.g., llama2, codellama, mistral)
+end note
+
+note top of EdgeNetwork
+    Vercel Edge Network provides
+    global CDN and serverless
+    function execution
+end note
+
+note right of AIModel
+    Models are downloaded locally:
+    - Llama 2 (7B, 13B, 70B)
+    - CodeLlama
+    - Mistral
+    - Custom fine-tuned models
+end note
+
+note left of Actions
+    GitHub Actions can trigger
+    automatic deployments to
+    Vercel on code commits
+end note
+
+@enduml
