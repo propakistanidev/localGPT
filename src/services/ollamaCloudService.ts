@@ -102,7 +102,7 @@ export class OllamaCloudService {
     return data.choices[0].message.content
   }
 
-  private async generateReplicateResponse(prompt: string, model: string = 'meta/llama-2-7b-chat'): Promise<string> {
+  private async generateReplicateResponse(prompt: string, _model: string = 'meta/llama-2-7b-chat'): Promise<string> {
     // Replicate uses a different API format
     const response = await fetch(`${this.baseUrl}/predictions`, {
       method: 'POST',
