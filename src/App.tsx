@@ -156,7 +156,7 @@ function App() {
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : (cloudAiAvailable ? 'bg-yellow-500' : 'bg-red-500')}`}></div>
               <span className="text-sm text-gray-300">
-                {isConnected ? 'Ollama Connected' : (cloudAiAvailable ? 'Cloud AI Ready' : 'Demo Mode')}
+                {isConnected ? 'Ollama Connected' : (cloudAiAvailable ? `${cloudAiService.getProviderInfo().name} Ready` : 'Demo Mode')}
               </span>
             </div>
             {!isConnected && (
