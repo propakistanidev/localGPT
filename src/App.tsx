@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { OllamaService } from './services/ollamaService'
 import { MessageCircle } from 'lucide-react'
+import { CloudAiService } from './services/cloudAiService'
 import './App.css'
 
 interface Message {
@@ -11,6 +12,7 @@ interface Message {
 }
 
 const ollamaService = new OllamaService()
+const cloudAiService = new CloudAiService()
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([
@@ -24,26 +26,30 @@ function App() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [connectionError, setConnectionError] = useState('')
+  const [cloudAiAvailable, setCloudAiAvailable] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Check Ollama connection on component mount
+  // Check Ollama connection and cloud AI availability on component mount
   useEffect(() => {
     checkConnection()
+    checkCloudAi()
   }, [])
+
+  const checkCloudAi = async () => {
+    try {
+      const available = await cloudAiService.isAvailable()
+      setCloudAiAvailable(available)
+    } catch (error) {
+      setCloudAiAvailable(false)
+    }
+  }
 
   const checkConnection = async () => {
     try {
       const connected = await ollamaService.checkConnection()
       setIsConnected(connected)
-      if (!connected) {
-        setConnectionError('Ollama service is not running. Please start Ollama first.')
-      } else {
-        setConnectionError('')
-      }
     } catch (error) {
       setIsConnected(false)
-      setConnectionError('Failed to check Ollama connection')
     }
   }
 
@@ -82,14 +88,39 @@ function App() {
         }
         setMessages(prev => [...prev, assistantMessage])
       } else {
-        // Fallback response when Ollama is not connected
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `I'm currently not connected to Ollama. ${connectionError || 'Please make sure Ollama is running and try again.'}`,
-          role: 'assistant',
-          timestamp: new Date()
+        // Use Cloud AI if configured
+        try {
+          const cloudAvailable = await cloudAiService.isAvailable()
+          if (cloudAvailable) {
+            const cloudResponse = await cloudAiService.generateResponse(userInput)
+            const assistantMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              content: cloudResponse,
+              role: 'assistant',
+              timestamp: new Date()
+            }
+            setMessages(prev => [...prev, assistantMessage])
+          } else {
+            // Handle when no AI service is configured
+            const demoResponse = await cloudAiService.generateDemoResponse(userInput)
+            const assistantMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              content: demoResponse,
+              role: 'assistant',
+              timestamp: new Date()
+            }
+            setMessages(prev => [...prev, assistantMessage])
+          }
+        } catch (error) {
+          console.error('Cloud AI error:', error)
+          const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            content: `Error: ${error instanceof Error ? error.message : 'Failed to generate response'}`,
+            role: 'assistant',
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, errorMessage])
         }
-        setMessages(prev => [...prev, assistantMessage])
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -123,9 +154,9 @@ function App() {
           </h1>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : (cloudAiAvailable ? 'bg-yellow-500' : 'bg-red-500')}`}></div>
               <span className="text-sm text-gray-300">
-                {isConnected ? 'Connected to Ollama' : 'Disconnected'}
+                {isConnected ? 'Ollama Connected' : (cloudAiAvailable ? 'Cloud AI Ready' : 'Demo Mode')}
               </span>
             </div>
             {!isConnected && (

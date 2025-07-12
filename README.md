@@ -6,8 +6,9 @@ A modern, responsive chat interface built with React, TypeScript, and Tailwind C
 
 - 🎨 **Modern ChatGPT-like UI** - Clean, responsive design with dark theme
 - 🤖 **Ollama Integration** - Direct connection to local Ollama service
+- ☁️ **Cloud AI Fallback** - Uses OpenAI GPT when Ollama is unavailable
 - 📱 **Responsive Design** - Works on desktop and mobile devices
-- 🔄 **Real-time Connection Status** - Shows Ollama connection status
+- 🔄 **Smart AI Detection** - Automatically switches between local and cloud AI
 - 💬 **Message History** - Persistent conversation history
 - ⚡ **TypeScript** - Full type safety
 - 🎨 **Tailwind CSS** - Utility-first styling
@@ -49,7 +50,17 @@ ollama pull llama2
 npm install
 ```
 
-### 2. Development
+### 2. (Optional) Configure Cloud AI Fallback
+
+For cloud deployment or when Ollama isn't available, you can configure OpenAI as a fallback:
+
+```bash
+cp .env.example .env
+# Edit .env and add your OpenAI API key
+VITE_OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+### 3. Development
 
 ```bash
 npm run dev
@@ -57,7 +68,7 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
-### 3. Build for Production
+### 4. Build for Production
 
 ```bash
 npm run build
@@ -79,7 +90,13 @@ This project is optimized for Vercel deployment:
 2. **Or deploy via Vercel Dashboard:**
    - Go to [vercel.com](https://vercel.com)
    - Import your Git repository
+   - Add environment variable: `VITE_OPENAI_API_KEY` (optional)
    - Deploy automatically
+
+3. **Environment Variables on Vercel:**
+   - In your Vercel dashboard, go to Settings > Environment Variables
+   - Add `VITE_OPENAI_API_KEY` with your OpenAI API key
+   - This enables cloud AI when users don't have Ollama running locally
 
 ## Project Structure
 
