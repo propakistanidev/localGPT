@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { OllamaService } from './services/ollamaService'
+import { OllamaService, type OllamaModel } from './services/ollamaService'
 import { MessageCircle, Plus, Archive, Trash2, Share2, Menu, X } from 'lucide-react'
 import { CloudAiService } from './services/cloudAiService'
 import './App.css'
@@ -55,14 +55,26 @@ function App() {
   const [selectedChats, setSelectedChats] = useState<string[]>([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [selectedModel, setSelectedModel] = useState<string>('deepseek-r1')
+  const [selectedModel, setSelectedModel] = useState<string>('')
   const [modelSelectedMessage, setModelSelectedMessage] = useState<string>('')
+  const [availableModels, setAvailableModels] = useState<OllamaModel[]>([])
+  const [isLoadingModels, setIsLoadingModels] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Check Ollama connection and cloud AI availability on component mount
   useEffect(() => {
-    checkConnection()
-    checkCloudAi()
+    const initializeApp = async () => {
+      try {
+        await Promise.all([
+          checkConnection(),
+          checkCloudAi()
+        ])
+      } catch (error) {
+        console.error('App initialization failed:', error)
+      }
+    }
+    
+    initializeApp()
   }, [])
 
   const checkCloudAi = async () => {
@@ -70,6 +82,7 @@ function App() {
       const available = await cloudAiService.isAvailable()
       setCloudAiAvailable(available)
     } catch (error) {
+      console.error('Cloud AI check failed:', error)
       setCloudAiAvailable(false)
     }
   }
@@ -78,8 +91,36 @@ function App() {
     try {
       const connected = await ollamaService.checkConnection()
       setIsConnected(connected)
+      if (connected) {
+        fetchAvailableModels()
+      } else {
+        setAvailableModels([])
+        setSelectedModel('')
+      }
     } catch (error) {
+      console.error('Connection check failed:', error)
       setIsConnected(false)
+      setAvailableModels([])
+      setSelectedModel('')
+    }
+  }
+
+  const fetchAvailableModels = async () => {
+    setIsLoadingModels(true)
+    try {
+      const models = await ollamaService.getModels()
+      setAvailableModels(models)
+      
+      // Auto-select the first available model if none is selected
+      if (!selectedModel && models.length > 0) {
+        const firstModel = models[0].name.replace(':latest', '')
+        setSelectedModel(firstModel)
+      }
+    } catch (error) {
+      console.error('Failed to fetch models:', error)
+      setAvailableModels([])
+    } finally {
+      setIsLoadingModels(false)
     }
   }
 
@@ -302,15 +343,8 @@ function App() {
   const handleModelChange = (model: string) => {
     setSelectedModel(model)
     
-    // List of fully integrated models
-    const integratedModels = ['deepseek-r1', 'deepseek-coder']
-    
-    // Check if the selected model is integrated
-    if (integratedModels.includes(model)) {
-      setModelSelectedMessage(`✅ ${model} has been selected and is ready to use`)
-    } else {
-      setModelSelectedMessage(`⚠️ ${model} selected - Full integration will be added soon`)
-    }
+    // All available models from Ollama are integrated
+    setModelSelectedMessage(`✅ ${model} has been selected and is ready to use`)
     
     // Clear the message after 4 seconds
     setTimeout(() => {
@@ -479,14 +513,26 @@ function App() {
                 value={selectedModel}
                 onChange={(e) => handleModelChange(e.target.value)}
                 className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoadingModels || !isConnected}
               >
-                <option value="deepseek-r1">Deepseek R1</option>
-                <option value="deepseek-coder">Deepseek Coder</option>
-                <option value="llama3.2">Llama 3.2</option>
-                <option value="llama3.1">Llama 3.1</option>
-                <option value="codellama">Code Llama</option>
-                <option value="mistral">Mistral</option>
-                <option value="phi3">Phi-3</option>
+                {isLoadingModels ? (
+                  <option value="">Loading models...</option>
+                ) : availableModels.length === 0 ? (
+                  <option value="">No models available</option>
+                ) : (
+                  availableModels.map((model) => {
+                    const modelName = model.name.replace(':latest', '')
+                    const displayName = modelName
+                      .split(/[_-]|(?=[A-Z])/)
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ')
+                    return (
+                      <option key={model.name} value={modelName}>
+                        {displayName}
+                      </option>
+                    )
+                  })
+                )}
               </select>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : (cloudAiAvailable ? 'bg-yellow-500' : 'bg-red-500')}`}></div>
@@ -508,11 +554,7 @@ function App() {
 
         {/* Model Selection Message */}
         {modelSelectedMessage && (
-          <div className={`px-4 py-3 rounded mx-4 mb-2 ${
-            modelSelectedMessage.includes('✅') 
-              ? 'bg-green-100 border border-green-400 text-green-700' 
-              : 'bg-yellow-100 border border-yellow-400 text-yellow-700'
-          }`}>
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mx-4 mb-2">
             {modelSelectedMessage}
           </div>
         )}
