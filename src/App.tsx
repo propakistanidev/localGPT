@@ -7,6 +7,7 @@ import './App.css'
 import { Icon } from '@iconify/react'
 import GlitchText from './components/GlitchText'
 import MagicBento from './components/MagicBento'
+import Modal from './components/Modal'
 
 interface Message {
   id: string
@@ -64,6 +65,7 @@ function App() {
   const [availableModels, setAvailableModels] = useState<OllamaModel[]>([])
   const [isLoadingModels, setIsLoadingModels] = useState(false)
   const [showArchivedChats, setShowArchivedChats] = useState(false)
+  const [showClearHistoryModal, setShowClearHistoryModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
 
@@ -402,10 +404,54 @@ function App() {
     alert('Chats have been unarchived and moved back to chat history')
   }
 
+  const clearAllHistory = () => {
+    // Reset to initial state with one default chat
+    const newChat: ChatHistory = {
+      id: Date.now().toString(),
+      title: 'New Chat',
+      messages: [
+        {
+          id: '1',
+          content: 'Hello! I\'m your local AI assistant. How can I help you today?',
+          role: 'assistant',
+          timestamp: new Date()
+        }
+      ],
+      lastMessage: new Date(),
+      isArchived: false
+    }
+    
+    setChatHistory([newChat])
+    setCurrentChatId(newChat.id)
+    setMessages(newChat.messages)
+    setShowClearHistoryModal(false)
+    setIsSelectionMode(false)
+    setSelectedChats([])
+  }
+
   const generateChatTitle = (messages: Message[]) => {
     const userMessages = messages.filter(m => m.role === 'user')
     if (userMessages.length > 0) {
-      return userMessages[0].content.substring(0, 30) + (userMessages[0].content.length > 30 ? '...' : '')
+      let title = userMessages[0].content.trim()
+      
+      // Remove common question words and clean up
+      title = title.replace(/^(what|how|why|when|where|who|can|could|would|should|is|are|do|does|did|will|would)\s+/i, '')
+      
+      // Split into words and take first few meaningful words
+      const words = title.split(/\s+/).filter(word => word.length > 0)
+      if (words.length > 0) {
+        // Take first 3-4 words or until we hit 20 characters
+        let result = ''
+        for (let i = 0; i < Math.min(words.length, 4); i++) {
+          const nextWord = words[i]
+          if (result.length + nextWord.length + 1 <= 20) {
+            result += (result ? ' ' : '') + nextWord
+          } else {
+            break
+          }
+        }
+        return result || 'New Chat'
+      }
     }
     return 'New Chat'
   }
@@ -446,13 +492,22 @@ function App() {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <button
-            onClick={createNewChat}
-            className="w-full bg-green-600 hover:bg-green-700 shadow-2xl text-white px-4 py-2 rounded-full flex items-center justify-center space-x-2 transition-colors glare-effect"
-          >
-            <Icon icon='line-md:plus' className="w-4 h-4" />
-            <span>New Chat</span>
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={createNewChat}
+              className="w-full bg-green-600 hover:bg-green-700 shadow-2xl text-white px-4 py-2 rounded-full flex items-center justify-center space-x-2 transition-colors glare-effect"
+            >
+              <Icon icon='line-md:plus' className="w-4 h-4" />
+              <span>New Chat</span>
+            </button>
+            <button
+              onClick={() => setShowClearHistoryModal(true)}
+              className="w-full bg-red-600 hover:bg-red-700 shadow-2xl text-white px-4 py-2 rounded-full flex items-center justify-center space-x-2 transition-colors glare-effect"
+            >
+              <Icon icon='line-md:close' className="w-4 h-4" />
+              <span>Clear History</span>
+            </button>
+          </div>
         </div>
 
         {/* Selection Mode Controls */}
@@ -509,51 +564,65 @@ function App() {
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-2">
-            {chatHistory.filter(chat => !chat.isArchived).map((chat) => (
-              <div
-                key={chat.id}
-                className={`relative flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-colors ${chat.id === currentChatId ? 'bg-green-600 shadow-2xl border-2 border-white' : 'bg-gray-700 hover:bg-gray-600'
-                  }`}
-                onClick={() => {
-                  if (isSelectionMode) {
-                    toggleChatSelection(chat.id)
-                  } else {
-                    selectChat(chat.id)
-                  }
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                  setIsSelectionMode(true)
-                  toggleChatSelection(chat.id)
-                }}
-              > <Icon icon='si:chat-text-duotone' className=" w-6 h-6" />
-                {isSelectionMode && (
-                  <div className="absolute top-2 right-2">
-                    <div className={`w-4 h-4 rounded border-2 ${selectedChats.includes(chat.id)
-                      ? 'bg-blue-500 border-blue-500'
-                      : 'border-gray-400'
-                      }`}>
-                      {selectedChats.includes(chat.id) && (
-                        <svg className="w-full h-full text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+              {Object.entries(chatHistory.reduce((acc, chat) => {
+                const date = chat.lastMessage.toLocaleDateString('en-GB', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                });
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(chat);
+                return acc;
+              }, {})).map(([date, chats]) => (
+                <div key={date} className="space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-1">{date}</h3>
+                  {chats.map((chat) => (
+                    <div
+                      key={chat.id}
+                      className={`relative flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-colors ${chat.id === currentChatId ? 'bg-green-600 shadow-2xl border-2 border-white' : 'bg-gray-700 hover:bg-gray-600'
+                        }`}
+                      onClick={() => {
+                        if (isSelectionMode) {
+                          toggleChatSelection(chat.id)
+                        } else {
+                          selectChat(chat.id)
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setIsSelectionMode(true)
+                        toggleChatSelection(chat.id)
+                      }}
+                    >
+                      {isSelectionMode && (
+                        <div className="absolute top-2 right-2">
+                          <div className={`w-4 h-4 rounded border-2 ${selectedChats.includes(chat.id)
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-400'
+                            }`}>
+                            {selectedChats.includes(chat.id) && (
+                              <svg className="w-full h-full text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
                       )}
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-medium truncate flex-1 mr-2">{chat.title}</h3>
+                          <p className="text-xs font-medium text-white whitespace-nowrap flex-shrink-0">
+                            {chat.lastMessage.toLocaleTimeString('en-GB', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-                <div className="flex items-center justify-between flex-1">
-                  <h3 className="text-sm font-medium truncate pr-2">{chat.title}</h3>
-                  <p className="text-xs font-medium text-white ml-2 whitespace-nowrap">
-                    {chat.lastMessage.toLocaleDateString('en-GB', {
-                      weekday: 'short',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </p>
+                  ))}
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
 
           {/* Archived Section */}
@@ -758,7 +827,7 @@ function App() {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors glare-effect"
+                className="bg-gray-600 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors glare-effect"
               >
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -770,6 +839,42 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Clear History Confirmation Modal */}
+      <Modal
+        isOpen={showClearHistoryModal}
+        onClose={() => setShowClearHistoryModal(false)}
+        title="Clear Chat History"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <Icon icon="line-md:alert" className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-white">Are you sure?</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                This action will permanently delete all your chat history including archived chats. This cannot be undone.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex space-x-3 pt-4">
+            <button
+              onClick={() => setShowClearHistoryModal(false)}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors glare-effect"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={clearAllHistory}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors glare-effect"
+            >
+              Clear All History
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
