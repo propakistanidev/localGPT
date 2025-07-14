@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { OllamaService, type OllamaModel } from './services/ollamaService'
-import { MessageCircle, Plus, Archive, Trash2, Share2, Menu, X } from 'lucide-react'
+import { MessageCircle, Plus, Archive, Trash2, Share2, Menu, X, ArchiveRestore } from 'lucide-react'
 import { CloudAiService } from './services/cloudAiService'
+import * as XLSX from 'xlsx'
 import './App.css'
 
 interface Message {
@@ -26,7 +27,7 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m your local AI assistant. How can I help you today?',
+      content: 'Hello! I\'m your local GPT. How can I help you today?',
       role: 'assistant',
       timestamp: new Date()
     }
@@ -43,7 +44,7 @@ function App() {
       messages: [
         {
           id: '1',
-          content: 'Hello! I\'m your local AI assistant. How can I help you today?',
+          content: 'Hello! I\'m your local GPT. How can I help you today?',
           role: 'assistant',
           timestamp: new Date()
         }
@@ -59,6 +60,7 @@ function App() {
   const [modelSelectedMessage, setModelSelectedMessage] = useState<string>('')
   const [availableModels, setAvailableModels] = useState<OllamaModel[]>([])
   const [isLoadingModels, setIsLoadingModels] = useState(false)
+  const [showArchivedChats, setShowArchivedChats] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Check Ollama connection and cloud AI availability on component mount
@@ -73,8 +75,52 @@ function App() {
         console.error('App initialization failed:', error)
       }
     }
-    
+
     initializeApp()
+  }, [])
+
+  // Save chat history to localStorage
+  useEffect(() => {
+    const saveChatHistory = () => {
+      try {
+        localStorage.setItem('chatHistory', JSON.stringify(chatHistory))
+      } catch (error) {
+        console.error('Failed to save chat history:', error)
+      }
+    }
+    saveChatHistory()
+  }, [chatHistory])
+
+  // Load chat history from localStorage on component mount
+  useEffect(() => {
+    const loadChatHistory = () => {
+      try {
+        const savedHistory = localStorage.getItem('chatHistory')
+        if (savedHistory) {
+          const parsedHistory = JSON.parse(savedHistory)
+          // Convert timestamp strings back to Date objects
+          const restoredHistory = parsedHistory.map((chat: any) => ({
+            ...chat,
+            lastMessage: new Date(chat.lastMessage),
+            messages: chat.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }))
+          }))
+          setChatHistory(restoredHistory)
+          
+          // Set current chat to the first non-archived chat
+          const firstChat = restoredHistory.find((chat: any) => !chat.isArchived)
+          if (firstChat) {
+            setCurrentChatId(firstChat.id)
+            setMessages(firstChat.messages)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error)
+      }
+    }
+    loadChatHistory()
   }, [])
 
   const checkCloudAi = async () => {
@@ -110,7 +156,7 @@ function App() {
     try {
       const models = await ollamaService.getModels()
       setAvailableModels(models)
-      
+
       // Auto-select the first available model if none is selected
       if (!selectedModel && models.length > 0) {
         const firstModel = models[0].name.replace(':latest', '')
@@ -325,10 +371,31 @@ function App() {
   }
 
   const shareSelectedChats = () => {
-    // Implement share functionality
-    console.log('Sharing chats:', selectedChats)
+    // Export selected chats to Excel
+    const selectedChatData = chatHistory.filter(chat => selectedChats.includes(chat.id))
+    const workbook = XLSX.utils.book_new()
+    selectedChatData.forEach(chat => {
+      const worksheet = XLSX.utils.json_to_sheet(chat.messages.map(msg => ({
+        Timestamp: msg.timestamp.toISOString(),
+        Role: msg.role,
+        Content: msg.content
+      })))
+      XLSX.utils.book_append_sheet(workbook, worksheet, chat.title.replace(/[\/:*?"<>|]/g, '_'))
+    })
+    XLSX.writeFile(workbook, 'chat_export.xlsx')
     setSelectedChats([])
     setIsSelectionMode(false)
+  }
+
+  const unarchiveSelectedChats = () => {
+    setChatHistory(prev => prev.map(chat =>
+      selectedChats.includes(chat.id) && chat.isArchived
+        ? { ...chat, isArchived: false }
+        : chat
+    ))
+    setSelectedChats([])
+    setIsSelectionMode(false)
+    alert('Chats have been unarchived and moved back to chat history')
   }
 
   const generateChatTitle = (messages: Message[]) => {
@@ -342,10 +409,10 @@ function App() {
   // Handle model selection
   const handleModelChange = (model: string) => {
     setSelectedModel(model)
-    
+
     // All available models from Ollama are integrated
     setModelSelectedMessage(`✅ ${model} has been selected and is ready to use`)
-    
+
     // Clear the message after 4 seconds
     setTimeout(() => {
       setModelSelectedMessage('')
@@ -377,7 +444,7 @@ function App() {
           </div>
           <button
             onClick={createNewChat}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+            className="w-full bg-green-600 hover:bg-green-700 shadow-2xl text-white px-4 py-2 rounded-full flex items-center justify-center space-x-2 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>New Chat</span>
@@ -407,19 +474,29 @@ function App() {
                 <Trash2 className="w-3 h-3" />
                 <span>Delete</span>
               </button>
-              <button
-                onClick={archiveSelectedChats}
-                className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
-              >
-                <Archive className="w-3 h-3" />
-                <span>Archive</span>
-              </button>
+              {selectedChats.some(id => chatHistory.find(chat => chat.id === id)?.isArchived) ? (
+                <button
+                  onClick={unarchiveSelectedChats}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
+                >
+                  <ArchiveRestore className="w-3 h-3" />
+                  <span>Unarchive</span>
+                </button>
+              ) : (
+                <button
+                  onClick={archiveSelectedChats}
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
+                >
+                  <Archive className="w-3 h-3" />
+                  <span>Archive</span>
+                </button>
+              )}
               <button
                 onClick={shareSelectedChats}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
               >
                 <Share2 className="w-3 h-3" />
-                <span>Share</span>
+                <span>Export</span>
               </button>
             </div>
           </div>
@@ -471,21 +548,73 @@ function App() {
           {/* Archived Section */}
           {chatHistory.some(chat => chat.isArchived) && (
             <div className="mt-5">
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Archived</h3>
-              <div className="space-y-1">
-                {chatHistory.filter(chat => chat.isArchived).map((chat) => (
-                  <div
-                    key={chat.id}
-                    className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 cursor-pointer transition-colors opacity-60"
-                    onClick={() => selectChat(chat.id)}
-                  >
-                    <h3 className="text-sm font-medium truncate">{chat.title}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {chat.lastMessage.toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-gray-400">Archived</h3>
+                <button
+                  onClick={() => setShowArchivedChats(!showArchivedChats)}
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  {showArchivedChats ? 'Hide' : 'Show'}
+                </button>
               </div>
+              {showArchivedChats && (
+                <div className="space-y-1">
+                  {chatHistory.filter(chat => chat.isArchived).map((chat) => (
+                    <div
+                      key={chat.id}
+                      className="relative p-2 rounded-lg bg-gray-700 hover:bg-gray-600 cursor-pointer transition-colors opacity-60 group"
+                      onClick={() => {
+                        if (isSelectionMode) {
+                          toggleChatSelection(chat.id)
+                        } else {
+                          selectChat(chat.id)
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setIsSelectionMode(true)
+                        toggleChatSelection(chat.id)
+                      }}
+                    >
+                      {isSelectionMode && (
+                        <div className="absolute top-1 right-1">
+                          <div className={`w-3 h-3 rounded border-2 ${selectedChats.includes(chat.id)
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-400'
+                            }`}>
+                            {selectedChats.includes(chat.id) && (
+                              <svg className="w-full h-full text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-medium truncate">{chat.title}</h3>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {chat.lastMessage.toLocaleDateString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setChatHistory(prev => prev.map(c =>
+                              c.id === chat.id ? { ...c, isArchived: false } : c
+                            ))
+                            alert(`"${chat.title}" has been unarchived and moved back to chat history`)
+                          }}
+                          className="ml-2 p-1 rounded hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Unarchive chat"
+                        >
+                          <ArchiveRestore className="w-4 h-4 text-gray-400 hover:text-white" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

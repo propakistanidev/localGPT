@@ -9,10 +9,24 @@ A modern, responsive chat interface built with React, TypeScript, and Tailwind C
 - ☁️ **Cloud AI Fallback** - Uses OpenAI GPT when Ollama is unavailable
 - 📱 **Responsive Design** - Works on desktop and mobile devices
 - 🔄 **Smart AI Detection** - Automatically switches between local and cloud AI
+- 🗃️ **Archive/Unarchive Chats** - Easily manage your chat history with archiving
+- 📊 **Excel Export** - Export chats with a single click
+- 💾 **Persistent History** - Automatic save and load chat history
 - 💬 **Message History** - Persistent conversation history
 - ⚡ **TypeScript** - Full type safety
 - 🎨 **Tailwind CSS** - Utility-first styling
 - 🚀 **Vercel Ready** - Optimized for Vercel deployment
+
+## New Features Implementation
+
+### Archive/Unarchive Chats
+Manage your chats with an intuitive archive and unarchive functionality. Archived chats can be hidden or shown and restored easily.
+
+### Excel Export
+Export your chats to Excel format with a single click. Each chat is stored as a separate sheet for better organization.
+
+### Persistent History
+Chat history is automatically saved and restored across sessions using localStorage, ensuring continuous and seamless user experience.
 
 ## Prerequisites
 
@@ -73,6 +87,33 @@ The application will be available at `http://localhost:5173`
 ```bash
 npm run build
 ```
+
+## Usage
+
+### Chat Management
+
+#### Archive/Unarchive Chats
+1. **Archive**: Right-click on any chat → Select multiple chats → Click "Archive" button
+2. **View Archived**: Click "Show" button next to "Archived" section in sidebar
+3. **Unarchive Individual**: Hover over archived chat → Click restore icon
+4. **Unarchive Multiple**: Select archived chats → Click "Unarchive" button
+
+#### Export to Excel
+1. Enter selection mode by right-clicking on any chat
+2. Select one or more chats you want to export
+3. Click the "Export" button
+4. Excel file `chat_export.xlsx` will be downloaded automatically
+5. Each chat becomes a separate worksheet with timestamp, role, and content
+
+#### Persistent History
+- Chat history is automatically saved to browser's localStorage
+- No manual action required - works seamlessly across sessions
+- Handles app restarts and browser refreshes gracefully
+
+### Model Selection
+- Use the dropdown in the header to switch between available Ollama models
+- Models are dynamically loaded from your local Ollama instance
+- Visual feedback shows connection status and selected model
 
 ## Deployment
 
@@ -157,6 +198,8 @@ The app includes custom color schemes in `tailwind.config.js`. You can modify th
 - **AI Integration**: Ollama
 - **Deployment**: Vercel
 - **Icons**: Lucide React
+- **Excel Export**: xlsx library
+- **Storage**: localStorage for persistence
 
 ---
 
