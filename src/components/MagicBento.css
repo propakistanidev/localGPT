@@ -1,0 +1,49 @@
+@keyframes magic-bento-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.magic-bento {
+  position: relative;
+  border-radius: 16px;
+  padding: 2px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
+  background-size: 400% 400%;
+  animation: magic-bento-gradient 4s ease infinite;
+  transition: all 0.3s ease;
+}
+
+.magic-bento:hover {
+  animation-duration: 2s;
+  transform: scale(1.02);
+}
+
+.magic-bento::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
+  background-size: 400% 400%;
+  animation: magic-bento-gradient 4s ease infinite;
+  filter: blur(8px);
+  z-index: -1;
+  opacity: 0.3;
+}
+
+.magic-bento > * {
+  position: relative;
+  z-index: 1;
+  border-radius: 14px;
+  overflow: hidden;
+}

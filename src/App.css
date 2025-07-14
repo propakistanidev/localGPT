@@ -40,3 +40,32 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Glare hover effect */
+.glare-effect {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.5) 50%, transparent 70%);
+  background-size: 200% 200%;
+  background-position: 200% 0;
+  transition: background-position 0.6s ease;
+}
+
+.glare-effect:hover {
+  background-position: -200% 0;
+}
+
+.glare-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+
+.glare-effect:hover::before {
+  left: 100%;
+}

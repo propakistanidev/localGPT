@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { OllamaService, type OllamaModel } from './services/ollamaService'
-import { MessageCircle, Plus, Archive, Trash2, Share2, Menu, X, ArchiveRestore } from 'lucide-react'
+import { Archive, Trash2, Share2, Menu, X, ArchiveRestore } from 'lucide-react'
 import { CloudAiService } from './services/cloudAiService'
 import * as XLSX from 'xlsx'
 import './App.css'
+import { Icon } from '@iconify/react'
+import GlitchText from './components/GlitchText'
+import MagicBento from './components/MagicBento'
 
 interface Message {
   id: string
@@ -63,6 +66,7 @@ function App() {
   const [showArchivedChats, setShowArchivedChats] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+
   // Check Ollama connection and cloud AI availability on component mount
   useEffect(() => {
     const initializeApp = async () => {
@@ -108,7 +112,7 @@ function App() {
             }))
           }))
           setChatHistory(restoredHistory)
-          
+
           // Set current chat to the first non-archived chat
           const firstChat = restoredHistory.find((chat: any) => !chat.isArchived)
           if (firstChat) {
@@ -437,16 +441,16 @@ function App() {
             <h2 className="text-lg font-semibold">Chat History</h2>
             <button
               onClick={() => setIsSidebarOpen(false)}
-              className="text-gray-400 hover:text-white transition-colors lg:hidden"
+              className="text-gray-400 hover:text-white transition-colors lg:hidden glare-effect"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
           <button
             onClick={createNewChat}
-            className="w-full bg-green-600 hover:bg-green-700 shadow-2xl text-white px-4 py-2 rounded-full flex items-center justify-center space-x-2 transition-colors"
+            className="w-full bg-green-600 hover:bg-green-700 shadow-2xl text-white px-4 py-2 rounded-full flex items-center justify-center space-x-2 transition-colors glare-effect"
           >
-            <Plus className="w-4 h-4" />
+            <Icon icon='line-md:plus' className="w-4 h-4" />
             <span>New Chat</span>
           </button>
         </div>
@@ -461,40 +465,40 @@ function App() {
                   setIsSelectionMode(false)
                   setSelectedChats([])
                 }}
-                className="text-sm text-gray-400 hover:text-white"
-              >
+                className="text-sm text-gray-400 hover:text-white glare-effect">
+              
                 Cancel
               </button>
             </div>
             <div className="flex space-x-2">
               <button
                 onClick={deleteSelectedChats}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
-              >
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1 glare-effect">
+              
                 <Trash2 className="w-3 h-3" />
                 <span>Delete</span>
               </button>
               {selectedChats.some(id => chatHistory.find(chat => chat.id === id)?.isArchived) ? (
                 <button
                   onClick={unarchiveSelectedChats}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
-                >
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1 glare-effect">
+                
                   <ArchiveRestore className="w-3 h-3" />
                   <span>Unarchive</span>
                 </button>
               ) : (
                 <button
                   onClick={archiveSelectedChats}
-                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
-                >
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1 glare-effect">
+                
                   <Archive className="w-3 h-3" />
                   <span>Archive</span>
                 </button>
               )}
               <button
                 onClick={shareSelectedChats}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1"
-              >
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex items-center justify-center space-x-1 glare-effect">
+              
                 <Share2 className="w-3 h-3" />
                 <span>Export</span>
               </button>
@@ -508,7 +512,7 @@ function App() {
             {chatHistory.filter(chat => !chat.isArchived).map((chat) => (
               <div
                 key={chat.id}
-                className={`relative p-3 rounded-lg cursor-pointer transition-colors ${chat.id === currentChatId ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                className={`relative flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-colors ${chat.id === currentChatId ? 'bg-green-600 shadow-2xl border-2 border-white' : 'bg-gray-700 hover:bg-gray-600'
                   }`}
                 onClick={() => {
                   if (isSelectionMode) {
@@ -522,7 +526,7 @@ function App() {
                   setIsSelectionMode(true)
                   toggleChatSelection(chat.id)
                 }}
-              >
+              > <Icon icon='si:chat-text-duotone' className=" w-6 h-6" />
                 {isSelectionMode && (
                   <div className="absolute top-2 right-2">
                     <div className={`w-4 h-4 rounded border-2 ${selectedChats.includes(chat.id)
@@ -537,10 +541,17 @@ function App() {
                     </div>
                   </div>
                 )}
-                <h3 className="text-sm font-medium truncate pr-5">{chat.title}</h3>
-                <p className="text-xs font-medium  text-white mt-0.5">
-                  {chat.lastMessage.toLocaleDateString()}
-                </p>
+                <div className="flex items-center justify-between flex-1">
+                  <h3 className="text-sm font-medium truncate pr-2">{chat.title}</h3>
+                  <p className="text-xs font-medium text-white ml-2 whitespace-nowrap">
+                    {chat.lastMessage.toLocaleDateString('en-GB', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -552,7 +563,7 @@ function App() {
                 <h3 className="text-sm font-medium text-gray-400">Archived</h3>
                 <button
                   onClick={() => setShowArchivedChats(!showArchivedChats)}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                  className="text-xs text-gray-400 hover:text-white transition-colors glare-effect"
                 >
                   {showArchivedChats ? 'Hide' : 'Show'}
                 </button>
@@ -593,8 +604,13 @@ function App() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <h3 className="text-sm font-medium truncate">{chat.title}</h3>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {chat.lastMessage.toLocaleDateString()}
+                          <p className=" text-xs text-gray-400 mt-0.5">
+                            {chat.lastMessage.toLocaleDateString('en-GB', {
+                              weekday: 'short',
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
                           </p>
                         </div>
                         <button
@@ -605,7 +621,7 @@ function App() {
                             ))
                             alert(`"${chat.title}" has been unarchived and moved back to chat history`)
                           }}
-                          className="ml-2 p-1 rounded hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="ml-2 p-1 rounded hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity glare-effect"
                           title="Unarchive chat"
                         >
                           <ArchiveRestore className="w-4 h-4 text-gray-400 hover:text-white" />
@@ -628,12 +644,12 @@ function App() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className={`text-gray-400 hover:text-white transition-colors ${isSidebarOpen ? 'lg:hidden' : ''}`}
+                className={`text-gray-400 hover:text-white transition-colors glare-effect ${isSidebarOpen ? 'lg:hidden' : ''}`}
               >
                 <Menu className="w-5 h-5" />
               </button>
               <h1 className="text-xl font-semibold flex items-center space-x-3">
-                <MessageCircle className="w-6 h-6" />
+                <Icon icon='line-md:chat' className='w-6 h-6' />
                 <span className="text-white">Local GPT</span>
               </h1>
             </div>
@@ -672,7 +688,7 @@ function App() {
               {!isConnected && (
                 <button
                   onClick={checkConnection}
-                  className="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded transition-colors"
+                  className="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded transition-colors glare-effect"
                 >
                   Retry
                 </button>
@@ -696,30 +712,27 @@ function App() {
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${message.role === 'user'
-                    ? 'bg-blue-600 text-white ml-auto'
-                    : 'bg-gray-700 text-gray-100 mr-auto'
-                    }`}
-                >
-                  <p className="text-sm">{message.content}</p>
-                  <p className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString()}
-                  </p>
-                </div>
+                <MagicBento>
+                  <div
+                    className={`max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${message.role === 'user'
+                      ? 'bg-blue-600 text-white ml-auto'
+                      : 'bg-gray-700 text-gray-100 mr-auto'
+                      }`}
+                  >
+                    <p className="text-sm">{message.content}</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                </MagicBento>
               </div>
             ))}
 
             {isLoading && (
               <div className="flex justify-start">
                 <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-gray-700 text-gray-100">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                    <span className="text-sm text-gray-400">Thinking...</span>
+                  <div className="flex items-center justify-center">
+                    <GlitchText text="Thinking..." className="text-sm text-gray-400" />
                   </div>
                 </div>
               </div>
@@ -745,14 +758,12 @@ function App() {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors glare-effect"
               >
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
+                  <Icon icon='streamline:mail-send-email-message' className='w-12 h-12' />
                 )}
               </button>
             </div>
